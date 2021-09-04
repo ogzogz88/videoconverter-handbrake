@@ -1,27 +1,29 @@
 import React from "react";
-import {Component} from 'react';
-import {post} from 'axios';
+import { Component } from 'react';
+import { post } from 'axios';
 import toastr from 'toastr';
 import "./Uploader.scss";
 import Progress from "./Progress";
 
-export default class Uploader extends Component{
+export default class Uploader extends Component {
 
     constructor(props) {
         super(props);
         this.state = {
             file: null,
             uploading: false,
-            progress : 0,
-            upload_ext : null,
-            convert_ext : '',
-            allowed_types : [
+            progress: 0,
+            upload_ext: null,
+            convert_ext: '',
+            ogz: 'ogz',
+            allowed_types: [
                 'webm', 'mkv', 'flv', 'ogg',
-                'avi', 'mov' , 'wmv', 'mp4',
+                'avi', 'mov', 'wmv', 'mp4',
                 'm4v', 'm4p', 'mpeg', '3gp',
-                '3g2'
+                '3g2', 'm3u8', 'hls'
             ]
         };
+
         this.fileInput = React.createRef();
         this.selectFile = this.initFileUpload.bind(this);
         this.uploadFile = this.uploadFile.bind(this);
@@ -29,7 +31,7 @@ export default class Uploader extends Component{
         this.handleChange = this.setConversionFormat.bind(this);
     }
 
-    getFileExtension(name){
+    getFileExtension(name) {
         return /(?:\.([^.]+))?$/.exec(name)[1];
     }
 
@@ -38,7 +40,7 @@ export default class Uploader extends Component{
     }
 
     onFileChange(e) {
-        if(!e.target.files.length){
+        if (!e.target.files.length) {
             return;
         }
 
@@ -46,44 +48,46 @@ export default class Uploader extends Component{
             ext = this.getFileExtension(file.name);
 
         if (this.validateFile(ext)) {
+            console.log("state");
+            console.log(this.state);
             this.setState({
                 file: file,
-                upload_ext : ext
+                upload_ext: ext
             })
-        }else{
+        } else {
             toastr.error('Error: Invalid file format')
         }
     }
 
-    setConversionFormat(e){
-        if(!e.target.value.length){
+    setConversionFormat(e) {
+        if (!e.target.value.length) {
             this.setState({
-                convert_ext : ''
+                convert_ext: ''
             });
             return;
         }
         this.setState({
-            convert_ext : e.target.value
+            convert_ext: e.target.value
         });
     }
 
-    initFileUpload(e){
+    initFileUpload(e) {
         this.fileInput.current.click();
     }
 
-    cancelUpload(e){
+    cancelUpload(e) {
         this.setState({
             file: null,
             uploading: false,
-            progress : 0,
-            upload_ext : null,
-            convert_ext : '',
+            progress: 0,
+            upload_ext: null,
+            convert_ext: '',
         });
         this.fileInput.current.value = '';
     }
 
-    uploadFile(e){
-        if(this.state.file && this.state.convert_ext){
+    uploadFile(e) {
+        if (this.state.file && this.state.convert_ext) {
             this.setState({
                 uploading: true,
             });
@@ -93,35 +97,35 @@ export default class Uploader extends Component{
 
             post('/upload', data, {
                 onUploadProgress: (progressEvent) => {
-                    let percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
+                    let percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     this.setState({
-                        progress : percentCompleted
+                        progress: percentCompleted
                     });
                 }
             })
-            .then(res => {
-                let file = res.data;
-                if(file.uploaded){
-                    this.props.initEncoding(file.path, this.state.convert_ext);
-                }
-            })
-            .catch(err => {
-                console.log(err);
-            });
-        }else{
+                .then(res => {
+                    let file = res.data;
+                    if (file.uploaded) {
+                        this.props.initEncoding(file.path, this.state.convert_ext);
+                    }
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+        } else {
             toastr.error('Error: Select a conversion format')
         }
     }
 
-    render(){
-        return(
+    render() {
+        return (
             <div className="uploader">
                 {!this.state.uploading ?
                     <div>
                         <div>
                             {this.state.file ?
-                                <button  onClick={this.uploadFile}>Upload File</button>
-                             :
+                                <button onClick={this.uploadFile}>Upload File</button>
+                                :
                                 <button onClick={this.selectFile}>Select Video File</button>
                             }
                             {this.state.file &&
@@ -137,7 +141,7 @@ export default class Uploader extends Component{
                                     </option>
                                     {
                                         this.state.allowed_types.map((ext) => {
-                                            if(ext !== this.state.upload_ext){
+                                            if (ext !== this.state.upload_ext) {
                                                 return <option key={ext} value={ext}>{ext}</option>
                                             }
                                         })
@@ -147,13 +151,13 @@ export default class Uploader extends Component{
                         }
 
                         <input type="file"
-                               name="file"
-                               className="form-control-file"
-                               ref={this.fileInput}
-                               onChange={this.onFileChange.bind(this)}/>
+                            name="file"
+                            className="form-control-file"
+                            ref={this.fileInput}
+                            onChange={this.onFileChange.bind(this)} />
                     </div>
                     :
-                        <Progress title="Uploading, please wait" progress={this.state.progress}/>
+                    <Progress title="Uploading, please wait" progress={this.state.progress} />
                 }
             </div>
         );
